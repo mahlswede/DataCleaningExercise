@@ -1,0 +1,26 @@
+// trifacta does not have a .dropna(how='all')  .
+// so we delete rows where fullname AND firstname AND lastname is missing
+delete row: ismissing([id]) && (ismissing([full_name]) && (ismissing([first_name]) && ismissing([last_name])))
+// create new ids to replace the missing ones
+derive value: sourcerownumber() - 1 as: 'id2'
+set col: id value: id2
+drop col: id2
+// next step doesn't work because content of 'id'' is different
+deduplicate
+// duplicate entry 'Eden Wace' was not removed due to different id. 
+ We need a drop_duplicates(keep='first')
+derive value: prev(full_name, 1) group: full_name order: full_name as: 'duplicates'
+delete row: !ismissing([duplicates])
+drop col: duplicates
+sort order: id
+replace col: age with: '70' on: 'old' global: true
+// no negative age
+set col: age value: if(age < 0, age * -1, age)
+// can't believe a 2 or 4 year old child has an emailaddress
+set col: age value: if((age > 0) && (age < 6), age * 10, age) group:
+// we can't guess an emailaddress
+delete row: ismissing([email])
+Set id to if(ismissing([id]), 199, id)
+// better we had a list with names<->gender
+set col: gender value: if(ismissing([gender]) && (first_name == 'Hasty'), 'Female', gender)
+// End
